@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "components": [
+    "Microsoft.VisualStudio.Component.CoreEditor",
+    "Microsoft.VisualStudio.Workload.CoreEditor",
+    "Microsoft.VisualStudio.Component.Roslyn.Compiler",
+    "Microsoft.VisualStudio.Component.Roslyn.LanguageServices",
+    "Microsoft.VisualStudio.Component.IntelliCode",
+    "Component.VisualStudio.GitHub.Copilot",
+    "Microsoft.Component.PythonTools",
+    "Microsoft.VisualStudio.Workload.Python"
+  ],
+  "extensions": []
+}
