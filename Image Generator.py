@@ -4,19 +4,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import IPython from display
 
-# Load and prepare the dataset
-(train_images, _), (_, _) = tf.keras.datasets.fashion_mnist.load_data()
-train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
-train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
+#Data
+(tr_img, _), (_, _) = tf.keras.datasets.fashion_mnist.load_data()
+tr_img = tr_img.reshape(tr_img.shape[0], 28, 28, 1).astype('float32')
+tr_img = (tr_img - 127.5) / 127.5  #pls do not ask me why i didn't use the other moderation
 
-BUFFER_SIZE = 60000
-BATCH_SIZE = 256
+bfz = 60000
+btz = 256
 
-# Batch and shuffle the data
-train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+#Training
+tr_data = tf.data.Dataset.from_tensor_slices(tr_img).shuffle(bfz).batch(btz)
 
-# Generator Model
-def make_generator_model():
+#Gen model
+def generator_mod():
     model = tf.keras.Sequential()
     model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,)))
     model.add(layers.BatchNormalization())
@@ -38,8 +38,8 @@ def make_generator_model():
 
     return model
 
-# Discriminator Model
-def make_discriminator_model():
+#Discrim
+def discriminator_mod():
     model = tf.keras.Sequential()
     model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]))
     model.add(layers.LeakyReLU())
@@ -54,64 +54,64 @@ def make_discriminator_model():
 
     return model
 
-# Loss and Optimizers
-cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+#Loss-Optmizing
+cr_ent = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
-def discriminator_loss(real_output, fake_output):
-    real_loss = cross_entropy(tf.ones_like(real_output), real_output)
-    fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
+def discriml(realo, fakeo):
+    real_loss = cr_ent(tf.ones_like(realo), realo)
+    fake_loss = cr_ent(tf.zeros_like(fakeo), fakeo)
     total_loss = real_loss + fake_loss
     return total_loss
 
-def generator_loss(fake_output):
-    return cross_entropy(tf.ones_like(fake_output), fake_output)
+def genl(fakeo):
+    return cr_ent(tf.ones_like(fakeo), fakeo)
 
-generator = make_generator_model()
-discriminator = make_discriminator_model()
+generator = generator_mod()
+discriminator = discriminator_mod()
 
-generator_optimizer = tf.keras.optimizers.Adam(1e-4)
-discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
+gen_opt = tf.keras.optimizers.Adam(1e-4)
+discrim_opt = tf.keras.optimizers.Adam(1e-4)
 
-# Training Loop
+#Train loop
 EPOCHS = 50
 noise_dim = 100
-num_examples_to_generate = 16
+num_ex = 16
 
-seed = tf.random.normal([num_examples_to_generate, noise_dim])
+seed = tf.random.normal([num_ex, noise_dim]) #for preloads
 
 @tf.function
-def train_step(images):
-    noise = tf.random.normal([BATCH_SIZE, noise_dim])
+def tr_sp(images):
+    noise = tf.random.normal([btz, noise_dim])
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
         generated_images = generator(noise, training=True)
 
-        real_output = discriminator(images, training=True)
-        fake_output = discriminator(generated_images, training=True)
+        realo = discriminator(images, training=True)
+        fakeo = discriminator(generated_images, training=True)
 
-        gen_loss = generator_loss(fake_output)
-        disc_loss = discriminator_loss(real_output, fake_output)
+        gen_loss = genl(fakeo)
+        disc_loss = discriml(realo, fakeo)
 
-    gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
-    gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
+    gen_grad = gen_tape.gradient(gen_loss, generator.trainable_variables)
+    discrim_grad = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
 
-    generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
-    discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
+    gen_opt.apply_gradients(zip(gen_grad, generator.trainable_variables))
+    discrim_opt.apply_gradients(zip(discrim_grad, discriminator.trainable_variables))
 
 def train(dataset, epochs):
     for epoch in range(epochs):
         for image_batch in dataset:
-            train_step(image_batch)
+            tr_sp(image_batch)
 
-        # Produce images for the GIF as we go
+        # GIFs
         display.clear_output(wait=True)
-        generate_and_save_images(generator, epoch + 1, seed)
+        gen_img(generator, epoch + 1, seed)
 
-    # Generate after the final epoch
+    # Epoch recall
     display.clear_output(wait=True)
-    generate_and_save_images(generator, epochs, seed)
+    gen_img(generator, epochs, seed)
 
-def generate_and_save_images(model, epoch, test_input):
+def gen_img(model, epoch, test_input):
     predictions = model(test_input, training=False)
 
     fig = plt.figure(figsize=(4, 4))
@@ -124,5 +124,5 @@ def generate_and_save_images(model, epoch, test_input):
     plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
     plt.show()
 
-# Start Training
-train(train_dataset, EPOCHS)
+#Final Train
+train(tr_data, EPOCHS)
