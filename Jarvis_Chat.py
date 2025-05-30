@@ -1,4 +1,5 @@
-#Still WIP. does not use realtime ML and NLP...
+#Still WIP. does not use realtime ML and NLP... this is a disappointment tbh
+
 import datetime
 import webbrowser
 import psutil
@@ -12,29 +13,29 @@ import tensorflow as tf
 from keras.api.models import Sequential
 from keras.api.layers import Dense, LSTM
 
-#This is for Rock-Paper-Scissors.
+#This is for RPS (the only part using hardcore NNs
 moves = ['rock', 'paper', 'scissors']
-move_to_num = {move: i for i, move in enumerate(moves)}
-num_to_move = {i: move for move, i in move_to_num.items()}
+mov_num = {move: i for i, move in enumerate(moves)}
+num_move = {i: move for move, i in mov_num.items()}
 
 
 np.random.seed(0)
-data_size = 10000
-sequence_length = 3
+data_sz = 10000
+seq_len = 3
 
 sequences = []
-next_moves = []
+nx_mov = []
 
-for _ in range(data_size):
-    sequence = np.random.choice(moves, size=sequence_length)
-    sequences.append([move_to_num[move] for move in sequence])
-    next_moves.append(move_to_num[np.random.choice(moves)])
+for _ in range(data_sz):
+    sequence = np.random.choice(moves, size=seq_len)
+    sequences.append([mov_num[move] for move in sequence])
+    nx_mov.append(mov_num[np.random.choice(moves)])
 
 X = np.array(sequences)
-y = np.array(next_moves)
+y = np.array(nx_mov)
 
 model = Sequential([
-    LSTM(10, input_shape=(sequence_length, 1)), 
+    LSTM(10, input_shape=(seq_len, 1)), 
     Dense(3, activation='softmax') 
 ])
 
@@ -42,100 +43,100 @@ model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
-X = np.reshape(X, (X.shape[0], sequence_length, 1))
+X = np.reshape(X, (X.shape[0], seq_len, 1))
 
 model.fit(X, y, epochs=10, batch_size=32, verbose=1)
 
-#Loading Weather cient.
-api_key = "0a82367a29f4061ad1ca1da8a2c54336"
+#Weather client
+api_key = "an api key maybe?" #use openweatherapi
 
-#NLP for normal conversation.
+#NLP approach
 chatbot = pipeline("text-generation", model="microsoft/DialoGPT-medium")
 
-#Initializing WolframAlpha client.
-wolfram_client = wolframalpha.Client('7Q76TP-X2QQ9AG652')
+#WFA client
+wolfram_client = wolframalpha.Client('an API key pls')
 
-#Initializing Microsoft Client.
+#MS client
 wiki_wiki = wikipediaapi.Wikipedia(
     language='en',
-    extract_format=wikipediaapi.ExtractFormat.WIKI,  #WIKI for better format.
-    user_agent='Jarvis AI Chatbot/1.0'  #Agent Identifier.
+    extract_format=wikipediaapi.ExtractFormat.WIKI,  #better form
+    user_agent='Jarvis AI Chatbot/1.0'  #identifier
 )
 
-def get_response(query):
+def response(query):
     response = chatbot(query, max_length=100, num_return_sequences=1)
     return response[0]['generated_text']
 
-def predict_next_move(previous_moves):
-    input_sequence = np.array([[move_to_num[move]] for move in previous_moves])
+def pred_mov(prev_mov):
+    in_seq = np.array([[mov_num[move]] for move in prev_mov])
     
-    if len(input_sequence) < sequence_length:
-        input_sequence = np.pad(input_sequence, ((sequence_length - len(input_sequence), 0), (0, 0)), 'constant')
+    if len(in_seq) < seq_len:
+        in_seq = np.pad(in_seq, ((seq_len - len(in_seq), 0), (0, 0)), 'constant')
     else:
-        input_sequence = input_sequence[-sequence_length:]
+        in_seq = in_seq[-seq_len:]
 
-    input_sequence = np.reshape(input_sequence, (1, sequence_length, 1))
+    in_seq = np.reshape(in_seq, (1, seq_len, 1))
 
-    probabilities = model.predict(input_sequence)[0]
-    predicted_move = num_to_move[np.argmax(probabilities)]
-    return predicted_move
+    probs = model.predict(in_seq)[0]
+    pred_movs = num_move[np.argmax(probs)]
+    return pred_movs
 
 def play_game():
     print("\nJarvis: Welcome to Rock-Paper-Scissors against AI!")
     print("          You can choose rock, paper, or scissors. To quit, type 'quit'.")
     
-    previous_moves = []
+    prev_mov = []
     
     while True:
-        user_move = input("          Enter your move (rock/paper/scissors): ").lower()
+        us_mov = input("          Enter your move (rock/paper/scissors): ").lower()
         
-        if user_move == 'quit':
+        if us_mov == 'quit':
             print("          Exiting the game.")
             break
         
-        if user_move not in moves:
+        if us_mov not in moves:
             print("          Invalid move. Please enter rock, paper, or scissors.")
             continue
         
-        previous_moves.append(user_move)
+        prev_mov.append(us_mov)
         
-        if len(previous_moves) > sequence_length:
-            previous_moves = previous_moves[-sequence_length:]
+        if len(prev_mov) > seq_len:
+            prev_mov = prev_mov[-seq_len:]
         
-        ai_move = predict_next_move(previous_moves)
+        ai_move = pred_mov(prev_mov)
         
-        print(f"          You chose: {user_move}")
+        print(f"          You chose: {us_mov}")
         print(f"          AI chose: {ai_move}")
         
-        winner =  winner(user_move, ai_move)
+        winner =  winner(us_mov, ai_move)
         if winner == 'user':
-            print("          You win!")
+            print("          You win!") #yay
         elif winner == 'ai':
-            print("          AI wins!")
+            print("          AI wins!") #boo
         else:
-            print("          It's a tie!")
+            print("          It's a tie!") #not good, not terrible (there's a reference)
         
         print("---------------------------")
 
-def winner(user_move, ai_move):
-    if user_move == ai_move:
+def winner(us_mov, ai_move):
+    if us_mov == ai_move:
         return 'tie'
-    elif (user_move == 'rock' and ai_move == 'scissors') or \
-         (user_move == 'paper' and ai_move == 'rock') or \
-         (user_move == 'scissors' and ai_move == 'paper'):
+    elif (us_mov == 'rock' and ai_move == 'scissors') or \
+         (us_mov == 'paper' and ai_move == 'rock') or \
+         (us_mov == 'scissors' and ai_move == 'paper'):
         return 'user'
     else:
         return 'ai'
 
-def get_time():
+def gt_tm():
     now = datetime.datetime.now()
     return now.strftime("%H:%M:%S")
 
-def get_date():
+def gt_dt():
     today = datetime.datetime.now()
     return today.strftime("%d/%m/%Y")
 
-def open_application(app_name):
+def op_app(app_name):
     for proc in psutil.process_iter(['pid', 'name']):
         if app_name.lower() in proc.info['name'].lower():
             proc.terminate()
@@ -143,13 +144,13 @@ def open_application(app_name):
             break
     webbrowser.open(app_name)
 
-def open_website(url):
+def op_web(url):
     webbrowser.open("{}".format(url))
 
-def search_google(search):
+def sh_google(search):
     webbrowser.open("https://www.google.com/search?q={}".format(search))
 
-def calculate_wolframalpha(query):
+def calc_wfa(query):
     try:
         res = wolfram_client.query(query)
         answer = next(res.results).text
@@ -157,22 +158,14 @@ def calculate_wolframalpha(query):
     except Exception as e:
         return "\nJarvis: I'm sorry, I couldn't calculate that."
 
-def search_wikipedia(query):
+def sh_wiki(query):
     page = wiki_wiki.page(query)
     if page.exists(): 
         return page.summary[:3000]  #Summary upto 2000 chars.
     else:
         return "\nJarvis: I couldn't find information on that topic."
 
-def vulgar(text):
-    # Define a list of vulgar words or use a more comprehensive filter
-    vulgar_words = ["fuck you", "fuck off", "fuck", "bitch", "fuck yourself", "bitchass", "dumbass", "dogshit", "asshole", "jerk", "jerkass", "motherfucker", "mf", "nigga", "nigger", "niga", "niger", "bastard"]  # Add more words as needed
-    pattern = r'\b(?:{})\b'.format('|'.join(map(re.escape, vulgar_words)))
-    if re.search(pattern, text, re.IGNORECASE):
-        return True
-    return False
-
-def get_weather(city, api_key):
+def gt_wth(city, api_key):
     base_url = "http://api.openweathermap.org/data/2.5/weather"
     params = {
         'q': city,
@@ -196,7 +189,7 @@ def get_weather(city, api_key):
     else:
         print("       Error fetching weather data. Please check the city name or API key.")
 
-# Main loop
+#My least favourite (loop)
 if __name__ == "__main__":
     print("\nJarvis: Hello! I am Jarvis, an AI chatbot developed by Abhradeep Roy. How can I assist you today?".rjust(30))
     while True:
@@ -212,35 +205,35 @@ if __name__ == "__main__":
             elif any(word in query for word in ["how are you?", "how are you", "you good?", "you good", "sup?", "sup", "whats up?", "what's up?", "whats up", "what's up"]):
                 print("I am fine! Thank you for asking.")
             elif "time" in query:
-                time = get_time()
+                time = gt_tm()
                 print(f"\nJarvis: The time is {time}".rjust(30))
             elif "date" in query:
-                date = get_date()
+                date = gt_dt()
                 print(f"\nJarvis: Today's date is {date}".rjust(30))
             elif "website" in query:
                 website = query.split("website")[-1].strip()
-                open_website(website)
+                op_web(website)
                 print(f"\nJarvis: Opening {website}".rjust(30))
             elif "application" in query:
                 app = query.split("application")[-1].strip()
-                open_application(app)
+                op_app(app)
                 print(f"\nJarvis: Opening {app}".rjust(30))
             elif "calculate" in query or "what is" in query:
-                answer = calculate_wolframalpha(query)
+                answer = calc_wfa(query)
                 print(f"\nJarvis: {answer}".rjust(30))
             elif "search" in query:
                 topic = query.split("search")[-1].strip()
-                result = search_wikipedia(topic)
+                result = sh_wiki(topic)
                 print(f"\nJarvis: {result}".rjust(30))
             elif "google" in query:
                 search = query.split("google")[-1].strip()
-                search_google(search)
+                sh_google(search)
             elif "weather" in query:
                 city = input("   Please enter the location: ")
-                get_weather(city, api_key)
+                gt_wth(city, api_key)
             elif "game" in query:
                 print("\nJarvis: Actually, the games are WIP, so let's just play Rock-Paper-Scissors. PLease Wait.")
                 play_game()
             else:
-                response = get_response(query)
+                response = response(query)
                 print(f"\nJarvis: {response}".rjust(30))
