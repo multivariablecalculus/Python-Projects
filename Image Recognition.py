@@ -1,36 +1,50 @@
 import tensorflow as tf
-from keras.api.preprocessing import image
+from keras.api.preprocessing import image as keras_img
 from keras.api.applications.mobilenet_v2 import MobileNetV2, preprocess_input, decode_predictions
 import numpy as np
-import cv2
+import cv2  # very rare indeed
 
-# Load the MobileNetV2 model pre-trained on ImageNet
+# MobileNetV2 is important, take notes
 model = MobileNetV2(weights='imagenet')
 
-# Load and preprocess the image
-def load_and_preprocess_image(image_path):
-    img = image.load_img(image_path, target_size=(224, 224))
-    img_array = image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = preprocess_input(img_array)
-    return img_array
+# Img load handling
+def prepare_input_image(img_path):
+    try:
+        loaded_img = keras_img.load_img(img_path, target_size=(224, 224))
+    except Exception as e:
+        print("Something went wrong loading the image:", e)
+        return None
+    
+    img_arr = keras_img.img_to_array(loaded_img)
+    img_arr = np.expand_dims(img_arr, axis=0)  #batch dimension req
+    img_arr = preprocess_input(img_arr)        #rescaling
+    return img_arr
 
-# Predict the class of the image
-def predict_image_class(model, preprocessed_image):
-    predictions = model.predict(preprocessed_image)
-    decoded_predictions = decode_predictions(predictions, top=5)
-    return decoded_predictions
+# stavilizer-intepreter for understanding
+def classify_image(net_model, input_img):
 
-# Path to the image
-image_path = "C:/Users/dipra/Downloads/Sigma.jpg"
+    preds = net_model.predict(input_img)
+    top5 = decode_predictions(preds, top=5)
+    
+    return top5
 
-# Load and preprocess the image
-preprocessed_image = load_and_preprocess_image(image_path)
 
-# Predict the class of the image
-predictions = predict_image_class(model, preprocessed_image)
+img_file_path = "anything-you-like"
 
-# Print the top 5 predictions
-print("Top 5 Predictions:")
-for i, prediction in enumerate(predictions[0], start=1):
-    print(f"{i}. {prediction[1]} ({prediction[2]*100:.2f}%)")
+processed_img = prepare_input_image(img_file_path)
+
+if processed_img is not None:
+    # Running the classifier
+    results = classify_image(model, processed_img)
+
+    # Printing output in a not-too-fancy way
+    print("Top 5 Predictions:")
+    for idx, item in enumerate(results[0], 1):
+        label = item[1]
+        confidence = item[2] * 100
+        print(f"{idx}. {label} ({confidence:.2f}%)")
+else:
+    print("Failed to process the image.")
+
+
+#PS: I was really lazy on making this, i did not use flash yolo... i beg for forgiveness
