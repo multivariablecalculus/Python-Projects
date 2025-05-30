@@ -1,4 +1,4 @@
-#Still WIP.
+#Still WIP. does not use realtime ML and NLP...
 import datetime
 import webbrowser
 import psutil
