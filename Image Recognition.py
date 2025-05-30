@@ -8,7 +8,7 @@ import cv2  # very rare indeed
 model = MobileNetV2(weights='imagenet')
 
 # Img load handling
-def prepare_input_image(img_path):
+def img_in(img_path):
     try:
         loaded_img = keras_img.load_img(img_path, target_size=(224, 224))
     except Exception as e:
@@ -21,7 +21,7 @@ def prepare_input_image(img_path):
     return img_arr
 
 # stavilizer-intepreter for understanding
-def classify_image(net_model, input_img):
+def img_class(net_model, input_img):
 
     preds = net_model.predict(input_img)
     top5 = decode_predictions(preds, top=5)
@@ -29,13 +29,13 @@ def classify_image(net_model, input_img):
     return top5
 
 
-img_file_path = "anything-you-like"
+img_path = "anything-you-like"
 
-processed_img = prepare_input_image(img_file_path)
+img_pro = img_in(img_path)
 
-if processed_img is not None:
+if img_pro is not None:
     # Running the classifier
-    results = classify_image(model, processed_img)
+    results = img_class(model, img_pro)
 
     # Printing output in a not-too-fancy way
     print("Top 5 Predictions:")
